@@ -126,7 +126,11 @@ class CardTextoState extends State<CardTexto> {
                   ? Container(
                       decoration: const BoxDecoration(
                           image: DecorationImage(
-                              image: AssetImage('no_hace_nada.jpeg'))))
+                        image: NetworkImage(
+                            "https://pbs.twimg.com/media/GBkYdHibwAA2eIm?format=jpg&name=900x900"),
+                        fit: BoxFit.scaleDown,
+                      )),
+                    )
                   : TextField(
                       controller: TextEditingController(text: text),
                       maxLines: null,

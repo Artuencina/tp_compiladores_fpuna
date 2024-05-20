@@ -40,6 +40,7 @@ class _HomeState extends State<Home> {
                       )
                     ],
                     content: const Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text("Speech Analyzer"),
                         Text("Desarrollado por: Arturo Encina"),

@@ -3,7 +3,7 @@
 //Al final hay un boton que dice analizar y lleva a la pantalla de analisis
 
 import 'package:flutter/material.dart';
-import 'package:tp_compiladores_fpuna/widgets/cardtexto.dart';
+import 'package:speech_analytics/widgets/cardtexto.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});

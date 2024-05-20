@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:tp_compiladores_fpuna/home.dart';
+import 'package:speech_analytics/home.dart';
 
 final theme = ThemeData(
   colorScheme: ColorScheme.light(

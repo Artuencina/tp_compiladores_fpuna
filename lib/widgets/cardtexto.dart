@@ -13,20 +13,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 
+import 'package:speech_analytics/analizador.dart';
+
 class CardTexto extends StatefulWidget {
   final String titulo;
-  final Function(File) onFileSelected;
 
-  const CardTexto(
-      {super.key, required this.titulo, required this.onFileSelected});
+  const CardTexto({super.key, required this.titulo});
 
   @override
-  State<CardTexto> createState() => _CardTextoState();
+  State<CardTexto> createState() => CardTextoState();
 }
 
-class _CardTextoState extends State<CardTexto> {
+class CardTextoState extends State<CardTexto> {
   File? file;
   String? text;
+  bool procesado = false;
 
   void _openFileExplorer() async {
     try {
@@ -47,7 +48,6 @@ class _CardTextoState extends State<CardTexto> {
         text = await file!.readAsString();
       }
 
-      widget.onFileSelected(file!);
       setState(() {});
     } on PlatformException catch (e) {
       print('Error: $e');
@@ -62,6 +62,22 @@ class _CardTextoState extends State<CardTexto> {
     setState(() {
       file = null;
       text = null;
+      procesado = false;
+    });
+  }
+
+  //Funcion que procesa la entrada
+  void procesarEntrada() {
+    //Si no hay archivo, no hacer nada
+    if (file == null) return;
+
+    //Procesar el texto
+    //final analizador = Analizador();
+
+    //Como todavia no funciona mostramos una imagen de un gatito
+    //que dice "no hace nada"
+    setState(() {
+      procesado = true;
     });
   }
 
@@ -106,15 +122,20 @@ class _CardTextoState extends State<CardTexto> {
             ),
             //Mostrar texto del archivo
             Flexible(
-              child: TextField(
-                controller: TextEditingController(text: text),
-                maxLines: null,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.all(16),
-                ),
-              ),
+              child: procesado
+                  ? Container(
+                      decoration: const BoxDecoration(
+                          image: DecorationImage(
+                              image: AssetImage('no_hace_nada.jpeg'))))
+                  : TextField(
+                      controller: TextEditingController(text: text),
+                      maxLines: null,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.all(16),
+                      ),
+                    ),
             ),
           ] else ...[
             Expanded(

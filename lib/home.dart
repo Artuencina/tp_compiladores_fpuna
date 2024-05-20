@@ -13,6 +13,9 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  GlobalKey<CardTextoState> atencionKey = GlobalKey();
+  GlobalKey<CardTextoState> clienteKey = GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,7 +61,7 @@ class _HomeState extends State<Home> {
               children: [
                 Expanded(
                   child: CardTexto(
-                    onFileSelected: (p) {},
+                    key: atencionKey,
                     titulo: "Atencion al cliente",
                   ),
                 ),
@@ -69,7 +72,7 @@ class _HomeState extends State<Home> {
                 ),
                 Expanded(
                   child: CardTexto(
-                    onFileSelected: (p) {},
+                    key: clienteKey,
                     titulo: "Experiencia de cliente",
                   ),
                 ),
@@ -79,8 +82,11 @@ class _HomeState extends State<Home> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Analizar',
         onPressed: () {
-          Navigator.pushNamed(context, '/analyze');
+          //Llamar a procesarEntrada de ambos CardTexto
+          atencionKey.currentState!.procesarEntrada();
+          clienteKey.currentState!.procesarEntrada();
         },
         child: const Icon(Icons.arrow_forward),
       ),

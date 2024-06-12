@@ -36,3 +36,26 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
+//Funcion para eliminar los signos de puntuacion de un texto
+String limpiarTexto(String texto) {
+  texto = texto.toLowerCase();
+  texto = texto.replaceAll('.', '');
+  texto = texto.replaceAll(',', '');
+  texto = texto.replaceAll(';', '');
+  texto = texto.replaceAll(':', '');
+  texto = texto.replaceAll('!', '');
+  texto = texto.replaceAll('?', '');
+  texto = texto.replaceAll('¿', '');
+  texto = texto.replaceAll('¡', '');
+  texto = texto.replaceAll('(', '');
+  texto = texto.replaceAll(')', '');
+  texto = texto.replaceAll('[', '');
+  texto = texto.replaceAll(']', '');
+  texto = texto.replaceAll('{', '');
+  texto = texto.replaceAll('}', '');
+  texto = texto.replaceAll('"', '');
+  texto = texto.replaceAll("'", '');
+
+  return texto;
+}

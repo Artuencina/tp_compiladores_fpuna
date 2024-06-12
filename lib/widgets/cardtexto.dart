@@ -7,6 +7,7 @@
 
 // ignore_for_file: avoid_web_libraries_in_flutter
 
+import 'package:easy_stepper/easy_stepper.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +15,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 
 import 'package:speech_analytics/analizador.dart';
+import 'package:speech_analytics/widgets/puntuacion.dart';
+import 'package:speech_analytics/widgets/selector.dart';
 
 class CardTexto extends StatefulWidget {
   final String titulo;
@@ -27,7 +30,9 @@ class CardTexto extends StatefulWidget {
 class CardTextoState extends State<CardTexto> {
   File? file;
   String? text;
-  bool procesado = false;
+  int activeStep = 0;
+  final Analizador analizador = Analizador();
+  final Map<String, Token> palabrasSospechosas = {};
 
   void _openFileExplorer() async {
     try {
@@ -37,6 +42,8 @@ class CardTextoState extends State<CardTexto> {
       );
 
       if (result == null) return;
+
+      activeStep = 1;
 
       //Verificar si es web
       if (kIsWeb) {
@@ -62,7 +69,8 @@ class CardTextoState extends State<CardTexto> {
     setState(() {
       file = null;
       text = null;
-      procesado = false;
+      activeStep = 0;
+      palabrasSospechosas.clear();
     });
   }
 
@@ -71,13 +79,18 @@ class CardTextoState extends State<CardTexto> {
     //Si no hay archivo, no hacer nada
     if (file == null) return;
 
-    //Procesar el texto
-    //final analizador = Analizador();
+    //Llamar a la funcion analizarSospechosos con el texto
+    final sospechosas = analizador.analizarSospechosos(text!);
+
+    //Guardar las palabras sospechosas en el map de cliente
+    for (String palabra in sospechosas) {
+      palabrasSospechosas[palabra] = Token.otros;
+    }
 
     //Como todavia no funciona mostramos una imagen de un gatito
     //que dice "no hace nada"
     setState(() {
-      procesado = true;
+      activeStep = 2;
     });
   }
 
@@ -114,34 +127,40 @@ class CardTextoState extends State<CardTexto> {
               ]
             ],
           ),
-          if (file != null) ...[
-            //Mostrar nombre del archivo
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(file!.path.split('/').last),
-            ),
-            //Mostrar texto del archivo
-            Flexible(
-              child: procesado
-                  ? Container(
-                      decoration: const BoxDecoration(
-                          image: DecorationImage(
-                        image: NetworkImage(
-                            "https://pbs.twimg.com/media/GBkYdHibwAA2eIm?format=jpg&name=900x900"),
-                        fit: BoxFit.scaleDown,
-                      )),
-                    )
-                  : TextField(
-                      controller: TextEditingController(text: text),
-                      maxLines: null,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(16),
-                      ),
-                    ),
-            ),
-          ] else ...[
+          EasyStepper(
+            activeStep: activeStep,
+            showLoadingAnimation: false,
+            lineStyle: const LineStyle(lineLength: 100),
+            stepShape: StepShape.circle,
+            borderThickness: 2,
+            finishedStepBorderColor: Colors.blue.shade800,
+            activeStepIconColor: Colors.blue.shade800,
+            unreachedStepBorderColor: Colors.black38,
+            unreachedStepIconColor: Colors.black38,
+            unreachedStepTextColor: Colors.black38,
+            steps: const [
+              EasyStep(
+                title: 'Seleccionar archivo',
+                icon: Icon(Icons.file_copy),
+                activeIcon: Icon(Icons.file_copy_outlined),
+              ),
+              EasyStep(
+                  title: 'Procesar archivo',
+                  icon: Icon(Icons.analytics),
+                  activeIcon: Icon(Icons.analytics_outlined)),
+              EasyStep(
+                title: 'Seleccionar tokens',
+                icon: Icon(Icons.category),
+                activeIcon: Icon(Icons.category_outlined),
+              ),
+              EasyStep(
+                title: 'Puntuación',
+                icon: Icon(Icons.check),
+                activeIcon: Icon(Icons.check_outlined),
+              )
+            ],
+          ),
+          if (activeStep == 0) ...[
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -156,6 +175,71 @@ class CardTextoState extends State<CardTexto> {
               ),
             ),
           ],
+          if (activeStep == 1) ...[
+            //Mostrar nombre del archivo
+            Text(file!.path.split('/').last),
+
+            const SizedBox(height: 10),
+
+            const SizedBox(height: 15),
+
+            //Mostrar texto del archivo
+            Flexible(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  controller: TextEditingController(text: text),
+                  maxLines: null,
+                  readOnly: true,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.all(16),
+                  ),
+                ),
+              ),
+            ),
+
+            //Boton para procesar el archivo en la parte del final
+            const Spacer(),
+            ElevatedButton.icon(
+                onPressed: procesarEntrada,
+                icon: const Icon(Icons.analytics),
+                label: const Text('Procesar archivo')),
+          ],
+          if (activeStep == 2) ...[
+            Expanded(
+              child: TokenSelector(
+                palabras: palabrasSospechosas,
+                onSelected: (result) {
+                  analizador.actualizarTabla(result);
+                  setState(
+                    () {
+                      activeStep = 4;
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+          if (activeStep == 4) ...[
+            Expanded(
+              child: Puntuacion(
+                texto: text!,
+                tablaSimbolos: analizador.tablaSimbolos,
+                palabrasBuenas: 5,
+                palabrasMalas: 3,
+                porcentaje: 70,
+                onRestart: () {
+                  setState(() {
+                    activeStep = 0;
+                    file = null;
+                    text = null;
+                    palabrasSospechosas.clear();
+                  });
+                },
+              ),
+            ),
+          ]
         ],
       ),
     );

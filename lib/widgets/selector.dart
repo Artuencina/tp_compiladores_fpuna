@@ -26,7 +26,9 @@ class _TokenSelectorState extends State<TokenSelector> {
     Icons.check,
     Icons.close,
     Icons.key,
-    Icons.error
+    Icons.waving_hand,
+    Icons.waving_hand,
+    Icons.error,
   ];
 
   @override

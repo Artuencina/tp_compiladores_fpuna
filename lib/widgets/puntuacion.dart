@@ -6,12 +6,9 @@
 //Y un boton para volver a empezar
 
 import 'package:flutter/material.dart';
-import 'package:speech_analytics/analizador.dart';
-import 'package:speech_analytics/main.dart';
 
 class Puntuacion extends StatelessWidget {
-  final Map<String, Token> tablaSimbolos;
-  final String texto;
+  final List<TextSpan> textspan;
   final int palabrasBuenas;
   final int palabrasMalas;
   final int porcentaje;
@@ -19,8 +16,7 @@ class Puntuacion extends StatelessWidget {
 
   const Puntuacion({
     super.key,
-    required this.tablaSimbolos,
-    required this.texto,
+    required this.textspan,
     required this.palabrasBuenas,
     required this.palabrasMalas,
     required this.porcentaje,
@@ -101,29 +97,7 @@ class Puntuacion extends StatelessWidget {
             ),
             child: RichText(
               text: TextSpan(
-                children: texto.split(RegExp(r'\s+')).map((palabra) {
-                  final token = tablaSimbolos[limpiarTexto(palabra)];
-
-                  if (token == Token.bueno) {
-                    return TextSpan(
-                      text: '$palabra ',
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: Colors.green,
-                          ),
-                    );
-                  } else if (token == Token.malo) {
-                    return TextSpan(
-                      text: '$palabra ',
-                      style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                            color: Colors.red,
-                          ),
-                    );
-                  } else {
-                    return TextSpan(
-                        text: '$palabra ',
-                        style: Theme.of(context).textTheme.bodyLarge);
-                  }
-                }).toList(),
+                children: textspan,
               ),
             ),
           ),

@@ -19,12 +19,14 @@ Esto genera un archivo de texto con la tabla de símbolos.
 import 'dart:collection';
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:speech_analytics/main.dart';
+import 'package:speech_analytics/puntuacion.dart';
 
-enum Token { bueno, malo, clave, otros }
+enum Token { bueno, malo, clave, saludo, saludoCompuesto, otros }
 
 class Analizador {
-  Analizador() {
+  Analizador({this.esAtencion = false}) {
     //Crear archivo de texto con la tabla de simbolos
     File file = File('tablaSimbolos.txt');
     if (!file.existsSync()) {
@@ -33,21 +35,35 @@ class Analizador {
       //Llenar tabla de simbolos con palabras por defecto
       tablaSimbolos['bueno'] = Token.bueno;
       tablaSimbolos['excelente'] = Token.bueno;
-      tablaSimbolos['bien'] = Token.bueno;
+      tablaSimbolos['horrible'] = Token.malo;
       tablaSimbolos['gracias'] = Token.bueno;
       tablaSimbolos['malo'] = Token.malo;
       tablaSimbolos['fue'] = Token.clave;
       tablaSimbolos['es'] = Token.clave;
       tablaSimbolos['un'] = Token.clave;
       tablaSimbolos['una'] = Token.clave;
-      tablaSimbolos['muy'] = Token.clave;
       tablaSimbolos['demasiado'] = Token.clave;
-
+      tablaSimbolos['muy'] = Token.clave;
+      tablaSimbolos['buenas'] = Token.saludoCompuesto;
+      tablaSimbolos['buenos'] = Token.saludoCompuesto;
+      tablaSimbolos['buen'] = Token.saludoCompuesto;
+      tablaSimbolos['día'] = Token.saludoCompuesto;
+      tablaSimbolos['días'] = Token.saludoCompuesto;
+      tablaSimbolos['tardes'] = Token.saludoCompuesto;
+      tablaSimbolos['noches'] = Token.saludoCompuesto;
+      tablaSimbolos['hola'] = Token.saludo;
+      tablaSimbolos['adiós'] = Token.saludo;
+      tablaSimbolos['chau'] = Token.saludo;
+      tablaSimbolos['hasta'] = Token.saludoCompuesto;
+      tablaSimbolos['luego'] = Token.saludoCompuesto;
       guardarTabla();
     } else {
       cargarPalabras();
     }
   }
+
+  //Variable que indica si el analizador es para el cliente o el de atencion
+  bool esAtencion;
 
   //HashMap que contiene la tabla de simbolos
   final HashMap<String, Token> tablaSimbolos = HashMap<String, Token>();
@@ -58,6 +74,8 @@ class Analizador {
     List<String> lines = file.readAsLinesSync();
     for (String line in lines) {
       List<String> tokens = line.split(' ');
+
+      //Cargar
       tablaSimbolos[tokens[0]] = Token.values[int.parse(tokens[1])];
     }
   }
@@ -112,6 +130,98 @@ class Analizador {
     }
   }
 
+  //Funcion que obtiene la puntuación de un texto y devuelve un objeto puntuacion
+  //con puntos buenos, malos y un porcentaje
+  Puntaje? obtenerPuntuacion(String texto) {
+    texto = limpiarTexto(texto);
+    bool haySaludo = false;
+    bool hayDespedida = false;
+    int buenos = 0;
+    int palabrasbuenas = 0;
+    int malos = 0;
+    int palabrasMalas = 0;
+
+    //Separamos el texto en lineas
+    List<String> lineas =
+        texto.split('\n').where((element) => element.isNotEmpty).toList();
+
+    //Luego, recorremos cada palabra de la linea
+    for (int i = 0; i < lineas.length; i++) {
+      List<String> palabras = lineas[i].split(RegExp(r'\s+'));
+
+      for (int j = 0; j < palabras.length; j++) {
+        final palabra = palabras[j];
+        //Si la palabra esta vacia, ignoramos
+        if (palabra.isEmpty) continue;
+
+        //Verificamos el token
+        final token = tablaSimbolos[palabra];
+
+        //Si el token es NULL, hay un error.
+        if (token == null) {
+          return null;
+        }
+
+        //Si es analizador de atencion, hay que corroborar que se tengan
+        //saludos y despedidas.
+        //Los saludos y despedidas compuestas comprueban la siguiente palabra
+        //Si no hay ambos, se considera un error y se suman puntos malos
+        if (esAtencion) {
+          //Comprobar que al inicio haya un saludo
+          if (i == 0) {
+            if (token == Token.saludo) {
+              haySaludo = true;
+            }
+            if (token == Token.saludoCompuesto && j + 1 < palabras.length) {
+              if (tablaSimbolos[palabras[j + 1]] == Token.saludoCompuesto) {
+                haySaludo = true;
+              }
+            }
+          }
+
+          //Comprobar que al final haya una despedida
+          if (i == lineas.length - 1) {
+            if (token == Token.saludo) {
+              hayDespedida = true;
+            }
+            if (token == Token.saludoCompuesto && j + 1 < palabras.length) {
+              if (tablaSimbolos[palabras[j + 1]] == Token.saludoCompuesto) {
+                hayDespedida = true;
+              }
+            }
+          }
+        }
+
+        //Aumentar la cantidad de puntos teniendo en cuenta que
+        //las palabras encontradas en lineas posteriores
+        //tienen mas peso
+        if (token != Token.otros && token != Token.clave) {
+          if (token == Token.bueno) {
+            buenos += i + 1;
+            palabrasbuenas++;
+          } else {
+            malos += i + 1;
+            palabrasMalas++;
+          }
+        }
+      }
+    }
+
+    //Si es analizador de atencion, se verifica que haya saludo y despedida
+    if (esAtencion && (!haySaludo || !hayDespedida)) {
+      malos += 10;
+    }
+
+    int porcentaje =
+        ((buenos + malos) == 0 ? 100 : 100 * buenos / (buenos + malos)).toInt();
+
+    //Obtenemos el porcentaje
+    return Puntaje(
+        puntosBuenos: palabrasbuenas,
+        puntosMalos: palabrasMalas,
+        porcentaje: porcentaje);
+  }
+
   //Funcion que recibe un Map con las palabras y su token y lo guarda en un archivo de texto
   void actualizarTabla(Map<String, Token> palabrasNuevas) {
     File file = File('tablaSimbolos.txt');
@@ -158,5 +268,64 @@ class Analizador {
         }
       }
     }
+  }
+
+  //Funcion que recibe un texto y genera un widget richtext con las palabras buenas y malas
+  List<TextSpan> generarRichText(String texto, BuildContext context) {
+    //Limpiar el texto
+    texto = limpiarTexto(texto);
+
+    //Separar el texto en lineas
+    List<String> lineas =
+        texto.split('\n').where((element) => element.isNotEmpty).toList();
+
+    //Lista de widgets
+    List<TextSpan> widgets = [];
+
+    //Recorrer cada linea
+    for (int i = 0; i < lineas.length; i++) {
+      List<String> palabras = lineas[i].split(RegExp(r'\s+'));
+
+      //Recorrer cada palabra
+      for (int j = 0; j < palabras.length; j++) {
+        final palabra = palabras[j];
+        //Si la palabra esta vacia, ignoramos
+        if (palabra.isEmpty) continue;
+
+        //Verificamos el token
+        final token = tablaSimbolos[palabra];
+        bool esSaludoCompuesto = false;
+
+        //Comprobar si es saludo compuesto
+        if (esAtencion &&
+            token == Token.saludoCompuesto &&
+            j + 1 < palabras.length) {
+          if (tablaSimbolos[palabras[j + 1]] == Token.saludoCompuesto) {
+            esSaludoCompuesto = true;
+          }
+        }
+
+        //Si el token es NULL, hay un error.
+        if (token == null) {
+          return [];
+        }
+
+        //Agregamos el texto a la lista de widgets
+        widgets.add(TextSpan(
+            text: '$palabra ',
+            style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                color: token == Token.bueno
+                    ? Colors.green
+                    : token == Token.malo
+                        ? Colors.red
+                        : token == Token.saludo || esSaludoCompuesto
+                            ? Colors.orange
+                            : Colors.black)));
+      }
+      widgets.add(const TextSpan(text: '\n'));
+    }
+
+    //Retornamos el widget
+    return widgets;
   }
 }

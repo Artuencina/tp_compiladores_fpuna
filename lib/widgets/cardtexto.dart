@@ -15,13 +15,15 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io';
 
 import 'package:speech_analytics/analizador.dart';
+import 'package:speech_analytics/puntuacion.dart';
 import 'package:speech_analytics/widgets/puntuacion.dart';
 import 'package:speech_analytics/widgets/selector.dart';
 
 class CardTexto extends StatefulWidget {
+  final bool esAtencion;
   final String titulo;
 
-  const CardTexto({super.key, required this.titulo});
+  const CardTexto({super.key, required this.titulo, this.esAtencion = false});
 
   @override
   State<CardTexto> createState() => CardTextoState();
@@ -31,8 +33,15 @@ class CardTextoState extends State<CardTexto> {
   File? file;
   String? text;
   int activeStep = 0;
-  final Analizador analizador = Analizador();
+  late Analizador analizador;
   final Map<String, Token> palabrasSospechosas = {};
+  Puntaje? puntaje;
+
+  @override
+  void initState() {
+    analizador = Analizador(esAtencion: widget.esAtencion);
+    super.initState();
+  }
 
   void _openFileExplorer() async {
     try {
@@ -71,6 +80,7 @@ class CardTextoState extends State<CardTexto> {
       text = null;
       activeStep = 0;
       palabrasSospechosas.clear();
+      puntaje = null;
     });
   }
 
@@ -130,7 +140,7 @@ class CardTextoState extends State<CardTexto> {
           EasyStepper(
             activeStep: activeStep,
             showLoadingAnimation: false,
-            lineStyle: const LineStyle(lineLength: 100),
+            lineStyle: const LineStyle(lineLength: 80),
             stepShape: StepShape.circle,
             borderThickness: 2,
             finishedStepBorderColor: Colors.blue.shade800,
@@ -212,6 +222,9 @@ class CardTextoState extends State<CardTexto> {
                 palabras: palabrasSospechosas,
                 onSelected: (result) {
                   analizador.actualizarTabla(result);
+
+                  //Obtener puntaje
+                  puntaje = analizador.obtenerPuntuacion(text!);
                   setState(
                     () {
                       activeStep = 4;
@@ -224,18 +237,12 @@ class CardTextoState extends State<CardTexto> {
           if (activeStep == 4) ...[
             Expanded(
               child: Puntuacion(
-                texto: text!,
-                tablaSimbolos: analizador.tablaSimbolos,
-                palabrasBuenas: 5,
-                palabrasMalas: 3,
-                porcentaje: 70,
+                textspan: analizador.generarRichText(text!, context),
+                palabrasBuenas: puntaje!.puntosBuenos,
+                palabrasMalas: puntaje!.puntosMalos,
+                porcentaje: puntaje!.porcentaje,
                 onRestart: () {
-                  setState(() {
-                    activeStep = 0;
-                    file = null;
-                    text = null;
-                    palabrasSospechosas.clear();
-                  });
+                  _removeFile();
                 },
               ),
             ),

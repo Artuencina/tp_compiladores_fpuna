@@ -60,6 +60,7 @@ class _HomeState extends State<Home> {
                 Expanded(
                   child: CardTexto(
                     titulo: "Atencion al cliente",
+                    esAtencion: true,
                   ),
                 ),
                 //Divisor vertical

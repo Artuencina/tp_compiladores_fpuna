@@ -238,9 +238,7 @@ class CardTextoState extends State<CardTexto> {
             Expanded(
               child: Puntuacion(
                 textspan: analizador.generarRichText(text!, context),
-                palabrasBuenas: puntaje!.puntosBuenos,
-                palabrasMalas: puntaje!.puntosMalos,
-                porcentaje: puntaje!.porcentaje,
+                puntaje: puntaje!,
                 onRestart: () {
                   _removeFile();
                 },

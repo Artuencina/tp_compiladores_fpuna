@@ -32,45 +32,32 @@ class Analizador {
     if (!file.existsSync()) {
       file.createSync();
 
-      //Llenar tabla de simbolos con palabras por defecto
-      tablaSimbolos['bueno'] = Token.bueno;
-      tablaSimbolos['excelente'] = Token.bueno;
-      tablaSimbolos['horrible'] = Token.malo;
-      tablaSimbolos['gracias'] = Token.bueno;
-      tablaSimbolos['malo'] = Token.malo;
-      tablaSimbolos['fue'] = Token.clave;
-      tablaSimbolos['es'] = Token.clave;
-      tablaSimbolos['un'] = Token.clave;
-      tablaSimbolos['una'] = Token.clave;
-      tablaSimbolos['demasiado'] = Token.clave;
-      tablaSimbolos['muy'] = Token.clave;
-      tablaSimbolos['buenas'] = Token.saludoCompuesto;
-      tablaSimbolos['buenos'] = Token.saludoCompuesto;
-      tablaSimbolos['buen'] = Token.saludoCompuesto;
-      tablaSimbolos['día'] = Token.saludoCompuesto;
-      tablaSimbolos['días'] = Token.saludoCompuesto;
-      tablaSimbolos['tardes'] = Token.saludoCompuesto;
-      tablaSimbolos['noches'] = Token.saludoCompuesto;
-      tablaSimbolos['hola'] = Token.saludo;
-      tablaSimbolos['adiós'] = Token.saludo;
-      tablaSimbolos['chau'] = Token.saludo;
-      tablaSimbolos['hasta'] = Token.saludoCompuesto;
-      tablaSimbolos['luego'] = Token.saludoCompuesto;
-      guardarTabla();
-    } else {
-      cargarPalabras();
+      inicializarPalabras();
     }
   }
 
   //Variable que indica si el analizador es para el cliente o el de atencion
   bool esAtencion;
 
-  //HashMap que contiene la tabla de simbolos
-  final HashMap<String, Token> tablaSimbolos = HashMap<String, Token>();
-
-  void cargarPalabras() {
-    //Leer archivo y cargar en la tabla de simbolos
+  //Funcion que lee un archivo txtinicial.txt y lo guarda en tablasimbolos.txt
+  void inicializarPalabras() {
     File file = File('tablaSimbolos.txt');
+    File fileInicial = File('txtinicial.txt');
+    List<String> lines = fileInicial.readAsLinesSync();
+    file.writeAsStringSync(lines.join('\n'));
+  }
+
+  //Funcion que lee una tabla de simbolos y lo guarda en un hashtable
+  HashMap<String, Token> cargarPalabras() {
+    //Leer archivo y cargar en la tabla de simbolos
+    HashMap<String, Token> tablaSimbolos = HashMap();
+    File file = File('tablaSimbolos.txt');
+
+    //Si no existe, inicializar
+    if (!file.existsSync()) {
+      inicializarPalabras();
+    }
+
     List<String> lines = file.readAsLinesSync();
     for (String line in lines) {
       List<String> tokens = line.split(' ');
@@ -78,10 +65,14 @@ class Analizador {
       //Cargar
       tablaSimbolos[tokens[0]] = Token.values[int.parse(tokens[1])];
     }
+    return tablaSimbolos;
   }
 
   //Funcion que se encarga de analizar el texto y ampliar la tabla de simbolos
   List<String> analizarSospechosos(String texto) {
+    //Tabla de simbolos
+    final HashMap<String, Token> tablaSimbolos = cargarPalabras();
+
     File file = File('tablaSimbolos.txt');
     //Quitar los signos de puntuacion
     texto = limpiarTexto(texto);
@@ -105,8 +96,6 @@ class Analizador {
         //Si no está en la tabla de simbolos, se agrega como otros
         //Se verifica que no sea sospechosa
         if (!sospechosas.contains(palabras[i])) {
-          tablaSimbolos[palabras[i]] = Token.otros;
-
           //Guardar en el archivo
           file.writeAsStringSync(
               '\n${palabras[i]} ${Token.values.indexOf(Token.otros)}',
@@ -117,23 +106,11 @@ class Analizador {
     return sospechosas;
   } //Fin de la funcion analizarSospechosos
 
-  //Funcion que guarda los valores del hashtable de tablasimbolos en un archivo
-  void guardarTabla() {
-    File file = File('tablaSimbolos.txt');
-    if (!file.existsSync()) {
-      file.createSync();
-    }
-    for (String palabra in tablaSimbolos.keys) {
-      file.writeAsStringSync(
-          '${tablaSimbolos.keys.first == palabra ? '' : '\n'}$palabra ${Token.values.indexOf(tablaSimbolos[palabra]!)}',
-          mode: FileMode.append);
-    }
-  }
-
   //Funcion que obtiene la puntuación de un texto y devuelve un objeto puntuacion
   //con puntos buenos, malos y un porcentaje
   Puntaje? obtenerPuntuacion(String texto) {
     texto = limpiarTexto(texto);
+    final HashMap<String, Token> tablaSimbolos = cargarPalabras();
     bool haySaludo = false;
     bool hayDespedida = false;
     int buenos = 0;
@@ -195,7 +172,7 @@ class Analizador {
         //Aumentar la cantidad de puntos teniendo en cuenta que
         //las palabras encontradas en lineas posteriores
         //tienen mas peso
-        if (token != Token.otros && token != Token.clave) {
+        if (Token.values.indexOf(token) < 2) {
           if (token == Token.bueno) {
             buenos += i + 1;
             palabrasbuenas++;
@@ -208,8 +185,16 @@ class Analizador {
     }
 
     //Si es analizador de atencion, se verifica que haya saludo y despedida
-    if (esAtencion && (!haySaludo || !hayDespedida)) {
-      malos += 10;
+    String mensaje = '';
+    if (esAtencion) {
+      if (!haySaludo) {
+        mensaje += 'No se encontró un saludo al inicio del texto. ';
+        malos += 5;
+      }
+      if (!hayDespedida) {
+        mensaje += 'No se encontró una despedida al final del texto. ';
+        malos += 5;
+      }
     }
 
     int porcentaje =
@@ -219,7 +204,8 @@ class Analizador {
     return Puntaje(
         puntosBuenos: palabrasbuenas,
         puntosMalos: palabrasMalas,
-        porcentaje: porcentaje);
+        porcentaje: porcentaje,
+        mensaje: mensaje);
   }
 
   //Funcion que recibe un Map con las palabras y su token y lo guarda en un archivo de texto
@@ -232,9 +218,6 @@ class Analizador {
     //Guardar las palabras nuevas en el archivo
     for (String palabra in palabrasNuevas.keys) {
       final intToken = Token.values.indexOf(palabrasNuevas[palabra]!);
-
-      //Agregar a la tabla de simbolos
-      tablaSimbolos[palabra] = palabrasNuevas[palabra]!;
 
       //Agregamos la palabra, su version masculina, femenina y plural
       file.writeAsStringSync('\n$palabra $intToken', mode: FileMode.append);
@@ -272,8 +255,10 @@ class Analizador {
 
   //Funcion que recibe un texto y genera un widget richtext con las palabras buenas y malas
   List<TextSpan> generarRichText(String texto, BuildContext context) {
+    //Tabla de simbolos
+    final HashMap<String, Token> tablaSimbolos = cargarPalabras();
     //Limpiar el texto
-    texto = limpiarTexto(texto);
+    //texto = limpiarTexto(texto);
 
     //Separar el texto en lineas
     List<String> lineas =
@@ -293,14 +278,21 @@ class Analizador {
         if (palabra.isEmpty) continue;
 
         //Verificamos el token
-        final token = tablaSimbolos[palabra];
+        final token = tablaSimbolos[limpiarTexto(palabra)];
         bool esSaludoCompuesto = false;
 
         //Comprobar si es saludo compuesto
-        if (esAtencion &&
-            token == Token.saludoCompuesto &&
-            j + 1 < palabras.length) {
-          if (tablaSimbolos[palabras[j + 1]] == Token.saludoCompuesto) {
+        if (esAtencion && token == Token.saludoCompuesto) {
+          //Verificar si la siguiente palabra es saludo compuesto
+          if (j + 1 < palabras.length &&
+              tablaSimbolos[limpiarTexto(palabras[j + 1])] ==
+                  Token.saludoCompuesto) {
+            esSaludoCompuesto = true;
+          }
+          //Verificar si la palabra anterior es saludo compuesto
+          if (j - 1 >= 0 &&
+              tablaSimbolos[limpiarTexto(palabras[j - 1])] ==
+                  Token.saludoCompuesto) {
             esSaludoCompuesto = true;
           }
         }

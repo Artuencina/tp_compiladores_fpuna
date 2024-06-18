@@ -6,20 +6,17 @@
 //Y un boton para volver a empezar
 
 import 'package:flutter/material.dart';
+import 'package:speech_analytics/puntuacion.dart';
 
 class Puntuacion extends StatelessWidget {
   final List<TextSpan> textspan;
-  final int palabrasBuenas;
-  final int palabrasMalas;
-  final int porcentaje;
+  final Puntaje puntaje;
   final void Function() onRestart;
 
   const Puntuacion({
     super.key,
     required this.textspan,
-    required this.palabrasBuenas,
-    required this.palabrasMalas,
-    required this.porcentaje,
+    required this.puntaje,
     required this.onRestart,
   });
 
@@ -44,7 +41,7 @@ class Puntuacion extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                '$porcentaje%',
+                '${puntaje.porcentaje}%',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             ),
@@ -53,13 +50,13 @@ class Puntuacion extends StatelessWidget {
           //Si el porcentaje es mayor a 50, mostrar texto de puntuacion buena
           //Si es menor a 50, mostrar texto de puntuacion mala
           //Si es igual a 50, mostrar texto de puntuacion media
-          if (porcentaje > 50) ...[
+          if (puntaje.porcentaje > 50) ...[
             const SizedBox(height: 10),
             Text(
               'La puntuación es buena',
               style: Theme.of(context).textTheme.titleMedium,
             ),
-          ] else if (porcentaje < 50) ...[
+          ] else if (puntaje.porcentaje < 50) ...[
             const SizedBox(height: 10),
             Text(
               'La puntuación es mala',
@@ -78,14 +75,30 @@ class Puntuacion extends StatelessWidget {
           //Mostrar cantidad de palabras buenas y malas
           ListTile(
             leading: const Icon(Icons.check, color: Colors.green),
-            title: Text('Palabras buenas: $palabrasBuenas'),
+            title: Text('Palabras buenas: ${puntaje.puntosBuenos}'),
           ),
           ListTile(
             leading: const Icon(Icons.close, color: Colors.red),
-            title: Text('Palabras malas $palabrasMalas'),
+            title: Text('Palabras malas ${puntaje.puntosMalos}'),
           ),
 
           const SizedBox(height: 10),
+
+          //Mostrar mensaje si existe
+          if (puntaje.mensaje.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: ListTile(
+                tileColor: Colors.orange[100],
+                leading: const Icon(Icons.info),
+                title: Text(
+                  puntaje.mensaje,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
 
           //Mostrar texto con palabras buenas y malas
           Container(

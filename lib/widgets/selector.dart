@@ -6,7 +6,7 @@ import 'package:speech_analytics/analizador.dart';
 
 class TokenSelector extends StatefulWidget {
   final Map<String, Token> palabras;
-  final void Function(Map<String, Token>) onSelected;
+  final void Function(Map<String, TokenValor>) onSelected;
 
   const TokenSelector({
     super.key,
@@ -21,6 +21,7 @@ class TokenSelector extends StatefulWidget {
 class _TokenSelectorState extends State<TokenSelector> {
   late final List<String> keys;
   late final List<Token> tokens;
+  late final List<double> values;
 
   final List<IconData> icons = [
     Icons.check,
@@ -36,6 +37,7 @@ class _TokenSelectorState extends State<TokenSelector> {
     super.initState();
     keys = widget.palabras.keys.toList();
     tokens = List.filled(keys.length, Token.otros);
+    values = List.filled(keys.length, 0);
   }
 
   @override
@@ -59,21 +61,41 @@ class _TokenSelectorState extends State<TokenSelector> {
                 return ListTile(
                   leading: Icon(icons[tokens[index].index]),
                   title: Text(keys[index]),
-                  trailing: DropdownButton<Token>(
-                    value: tokens[index],
-                    onChanged: (value) {
-                      setState(() {
-                        tokens[index] = value!;
-                      });
-                    },
-                    items: Token.values
-                        .map(
-                          (e) => DropdownMenuItem(
-                            value: e,
-                            child: Text(e.toString().split('.').last),
-                          ),
-                        )
-                        .toList(),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      DropdownButton<Token>(
+                        value: tokens[index],
+                        onChanged: (value) {
+                          setState(() {
+                            tokens[index] = value!;
+                          });
+                        },
+                        items: Token.values
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(e.toString().split('.').last),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                      const SizedBox(width: 10),
+                      //Elegir un valor numerico para la palabra
+                      TextField(
+                        decoration: const InputDecoration(
+                          constraints: BoxConstraints(maxWidth: 50),
+                          labelText: 'Valor',
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          final double valor = double.tryParse(value) ?? 0;
+                          setState(() {
+                            values[index] = valor;
+                          });
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
@@ -84,9 +106,10 @@ class _TokenSelectorState extends State<TokenSelector> {
           padding: const EdgeInsets.all(25.0),
           child: ElevatedButton.icon(
             onPressed: () {
-              final Map<String, Token> result = {};
+              final Map<String, TokenValor> result = {};
               for (int i = 0; i < keys.length; i++) {
-                result[keys[i]] = tokens[i];
+                result[keys[i]] =
+                    TokenValor(token: tokens[i], valor: values[i]);
               }
               widget.onSelected(result);
             },

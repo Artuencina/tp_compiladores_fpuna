@@ -87,7 +87,7 @@ class Puntuacion extends StatelessWidget {
           //Mostrar mensaje si existe
           if (puntaje.mensaje.isNotEmpty) ...[
             Padding(
-              padding: const EdgeInsets.all(12.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: ListTile(
                 tileColor: Colors.orange[100],
                 leading: const Icon(Icons.info),

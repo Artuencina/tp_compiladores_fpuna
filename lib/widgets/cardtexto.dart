@@ -143,11 +143,15 @@ class CardTextoState extends State<CardTexto> {
             lineStyle: const LineStyle(lineLength: 80),
             stepShape: StepShape.circle,
             borderThickness: 2,
+            stepRadius: 25,
+            internalPadding: 10,
+            alignment: Alignment.topCenter,
             finishedStepBorderColor: Colors.blue.shade800,
             activeStepIconColor: Colors.blue.shade800,
             unreachedStepBorderColor: Colors.black38,
             unreachedStepIconColor: Colors.black38,
             unreachedStepTextColor: Colors.black38,
+            enableStepTapping: false,
             steps: const [
               EasyStep(
                 title: 'Seleccionar archivo',
@@ -194,7 +198,7 @@ class CardTextoState extends State<CardTexto> {
             const SizedBox(height: 15),
 
             //Mostrar texto del archivo
-            Flexible(
+            Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
                 child: TextField(
@@ -210,11 +214,13 @@ class CardTextoState extends State<CardTexto> {
             ),
 
             //Boton para procesar el archivo en la parte del final
-            const Spacer(),
+
             ElevatedButton.icon(
                 onPressed: procesarEntrada,
                 icon: const Icon(Icons.analytics),
                 label: const Text('Procesar archivo')),
+
+            const SizedBox(height: 20),
           ],
           if (activeStep == 2) ...[
             Expanded(

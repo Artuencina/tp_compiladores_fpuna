@@ -38,6 +38,7 @@ dependencies:
   file_picker: ^8.0.0+1
   google_fonts: 6.1.0
   easy_stepper: ^0.8.5
+  open_file: ^3.3.2
 
 dev_dependencies:
   flutter_test:

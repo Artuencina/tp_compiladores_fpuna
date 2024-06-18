@@ -1,110 +1,67 @@
-noches 4
-luego 4
-gracias 0
-buen 4
-es 2
-buenos 4
-hola 3
-excelente 0
-bueno 0
-una 2
-demasiado 2
-hasta 4
-chau 3
-adiós 3
-muy 2
-buenas 4
-malo 1
-día 4
-días 4
-fue 2
-tardes 3
-un 2
-horrible 1
-desde 5
-ayer 5
-que 5
-no 5
-puedo 5
-consultar 5
-mi 5
-saldo 5
-claro 5
-tres 5
-millones 5
-doscientos 5
-setenta 5
-mil 5
-cero 5
-setenta 5
-y 5
-otro 5
-el 5
-año 5
-de 5
-mi 5
-nacimiento 5
-novecientos 5
-noventa 5
-y 5
-seis 5
-no 5
-muchas 5
-usted 5
-ha 5
-sido 5
-mil 5
-mils 5
-mila 5
-milas 5
-amable 0
-amables 0
-amablea 0
-amableas 0
-le 5
-saluda 5
-joanna 5
-atención 5
-al 5
-cliente 5
-en 5
-qué 5
-ayudarle 5
-darle 5
-esa 5
-informaciónpor 5
-favor 5
-me 5
-facilita 5
-su 5
-número 5
-documento 5
-seguridad 5
-puede 5
-darme 5
-su 5
-fecha 5
-verifico 5
-su 5
-trienta 5
-guaraníes 5
-a 5
-la 5
-fecha 5
-algo 5
-más 5
-pueda 5
-hacer 5
-por 5
-por 5
-llamar 5
-al 5
-servicio 5
-atención 5
-al 5
-clienteque 5
-tenga 5
-pregunta 5
-preguntas 5
-pregunto 5
-preguntos 5
+noches 4 1
+luego 4 1
+gracias 0 1
+buen 4 1
+es 2 1
+buenos 4 1
+hola 3 1
+excelente 0 5
+bueno 0 1
+una 2 1
+demasiado 2 3
+hasta 4 1
+chau 3 1
+adiós 3 1
+muy 2 2
+buenas 4 1
+malo 1 1
+día 4 1
+días 4 1
+fue 2 1
+tardes 3 1
+un 2 1
+horrible 1 3
+desastre 1 2
+nada 2 -1
+esta 2 1
+este 2 1
+el 5 1
+servicio 5 1
+no 5 1
+me 5 1
+funciona 5 1
+el 5 1
+internet 5 1
+quiero 5 1
+saber 5 1
+porqué 5 1
+no 5 1
+funciona 5 1
+dos 5 1
+millones 5 1
+cien 5 1
+mi 5 1
+año 5 1
+de 5 1
+nacimiento 5 1
+novecientos 5 1
+noventa 5 1
+y 5 1
+cinco 5 1
+no 5 1
+van 5 1
+a 5 1
+arreglar 5 1
+hoy 5 1
+porquería 1 5.0
+porquerías 1 5.0
+porquerío 1 5.0
+porqueríos 1 5.0
+mil 5 0.0
+mils 5 0.0
+mila 5 0.0
+milas 5 0.0
+compañía 5 0.0
+compañías 5 0.0
+compañío 5 0.0
+compañíos 5 0.0

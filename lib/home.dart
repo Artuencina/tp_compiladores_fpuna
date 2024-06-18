@@ -3,6 +3,7 @@
 //Al final hay un boton que dice analizar y lleva a la pantalla de analisis
 
 import 'package:flutter/material.dart';
+import 'package:open_file/open_file.dart';
 import 'package:speech_analytics/widgets/cardtexto.dart';
 
 class Home extends StatefulWidget {
@@ -20,6 +21,15 @@ class _HomeState extends State<Home> {
         title: const Text('Speech Analyzer'),
         backgroundColor: Theme.of(context).colorScheme.secondary,
         actions: [
+          //Boyon que abre el archivo de tabla de simbolos
+          IconButton(
+            icon: const Icon(Icons.folder_open),
+            onPressed: () async {
+              //Abrir archivo
+              await OpenFile.open("tablaSimbolos.txt");
+            },
+          ),
+          //Boton de informacion
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {

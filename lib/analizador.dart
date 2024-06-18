@@ -14,6 +14,9 @@ El resto de palabras van al token otros.
 
 Para analizar el texto, se recorre el texto palabra por palabra y se va llenando la tabla de símbolos.
 Esto genera un archivo de texto con la tabla de símbolos.
+
+//El archivo tiene el siguiente formato
+lexema token valor
 */
 
 import 'dart:collection';
@@ -24,6 +27,13 @@ import 'package:speech_analytics/main.dart';
 import 'package:speech_analytics/puntuacion.dart';
 
 enum Token { bueno, malo, clave, saludo, saludoCompuesto, otros }
+
+class TokenValor {
+  final Token token;
+  final double valor;
+
+  TokenValor({required this.token, required this.valor});
+}
 
 class Analizador {
   Analizador({this.esAtencion = false}) {
@@ -48,9 +58,9 @@ class Analizador {
   }
 
   //Funcion que lee una tabla de simbolos y lo guarda en un hashtable
-  HashMap<String, Token> cargarPalabras() {
+  HashMap<String, TokenValor> cargarPalabras() {
     //Leer archivo y cargar en la tabla de simbolos
-    HashMap<String, Token> tablaSimbolos = HashMap();
+    HashMap<String, TokenValor> tablaSimbolos = HashMap();
     File file = File('tablaSimbolos.txt');
 
     //Si no existe, inicializar
@@ -59,11 +69,22 @@ class Analizador {
     }
 
     List<String> lines = file.readAsLinesSync();
+
+    //Si no hay lineas, inicializar las palabras
+    if (lines.isEmpty) {
+      inicializarPalabras();
+      lines = file.readAsLinesSync();
+    }
+
     for (String line in lines) {
       List<String> tokens = line.split(' ');
 
       //Cargar
-      tablaSimbolos[tokens[0]] = Token.values[int.parse(tokens[1])];
+      TokenValor tokenValor = TokenValor(
+          token: Token.values[int.parse(tokens[1])],
+          valor: double.parse(tokens[2]));
+
+      tablaSimbolos[tokens[0]] = tokenValor;
     }
     return tablaSimbolos;
   }
@@ -71,7 +92,7 @@ class Analizador {
   //Funcion que se encarga de analizar el texto y ampliar la tabla de simbolos
   List<String> analizarSospechosos(String texto) {
     //Tabla de simbolos
-    final HashMap<String, Token> tablaSimbolos = cargarPalabras();
+    final HashMap<String, TokenValor> tablaSimbolos = cargarPalabras();
 
     File file = File('tablaSimbolos.txt');
     //Quitar los signos de puntuacion
@@ -87,7 +108,7 @@ class Analizador {
       //Si la palabra es clave, la palabra siguiente se agrega como sospechosa
       if (tablaSimbolos.containsKey(palabras[i])) {
         //Si la palabra siguiente no está en la tabla de simbolos, se agrega como sospechosa
-        if (tablaSimbolos[palabras[i]] == Token.clave &&
+        if (tablaSimbolos[palabras[i]]!.token == Token.clave &&
             i + 1 <= palabras.length &&
             !tablaSimbolos.containsKey(palabras[i + 1])) {
           sospechosas.add(palabras[i + 1]);
@@ -98,7 +119,7 @@ class Analizador {
         if (!sospechosas.contains(palabras[i])) {
           //Guardar en el archivo
           file.writeAsStringSync(
-              '\n${palabras[i]} ${Token.values.indexOf(Token.otros)}',
+              '\n${palabras[i]} ${Token.values.indexOf(Token.otros)} 1',
               mode: FileMode.append);
         }
       }
@@ -110,13 +131,16 @@ class Analizador {
   //con puntos buenos, malos y un porcentaje
   Puntaje? obtenerPuntuacion(String texto) {
     texto = limpiarTexto(texto);
-    final HashMap<String, Token> tablaSimbolos = cargarPalabras();
+    final HashMap<String, TokenValor> tablaSimbolos = cargarPalabras();
     bool haySaludo = false;
     bool hayDespedida = false;
     int buenos = 0;
     int palabrasbuenas = 0;
     int malos = 0;
     int palabrasMalas = 0;
+
+    //Un token de palabra clave puede multiplicar el valor siguiente
+    double? multiplicador;
 
     //Separamos el texto en lineas
     List<String> lineas =
@@ -146,11 +170,13 @@ class Analizador {
         if (esAtencion) {
           //Comprobar que al inicio haya un saludo
           if (i == 0) {
-            if (token == Token.saludo) {
+            if (token.token == Token.saludo) {
               haySaludo = true;
             }
-            if (token == Token.saludoCompuesto && j + 1 < palabras.length) {
-              if (tablaSimbolos[palabras[j + 1]] == Token.saludoCompuesto) {
+            if (token.token == Token.saludoCompuesto &&
+                j + 1 < palabras.length) {
+              if (tablaSimbolos[palabras[j + 1]]?.token ==
+                  Token.saludoCompuesto) {
                 haySaludo = true;
               }
             }
@@ -158,11 +184,13 @@ class Analizador {
 
           //Comprobar que al final haya una despedida
           if (i == lineas.length - 1) {
-            if (token == Token.saludo) {
+            if (token.token == Token.saludo) {
               hayDespedida = true;
             }
-            if (token == Token.saludoCompuesto && j + 1 < palabras.length) {
-              if (tablaSimbolos[palabras[j + 1]] == Token.saludoCompuesto) {
+            if (token.token == Token.saludoCompuesto &&
+                j + 1 < palabras.length) {
+              if (tablaSimbolos[palabras[j + 1]]?.token ==
+                  Token.saludoCompuesto) {
                 hayDespedida = true;
               }
             }
@@ -172,17 +200,43 @@ class Analizador {
         //Aumentar la cantidad de puntos teniendo en cuenta que
         //las palabras encontradas en lineas posteriores
         //tienen mas peso
-        if (Token.values.indexOf(token) < 2) {
-          if (token == Token.bueno) {
-            buenos += i + 1;
-            palabrasbuenas++;
+        if (Token.values.indexOf(token.token) < 2) {
+          final valor = (esAtencion ? 0 : i) +
+              ((multiplicador ?? 1) * token.valor).toInt();
+          if (token.token == Token.bueno) {
+            //Si es negativo, suma en las malas
+            if (valor < 0) {
+              malos -= valor;
+              palabrasMalas++;
+            } else {
+              buenos += valor;
+              palabrasbuenas++;
+            }
           } else {
-            malos += i + 1;
-            palabrasMalas++;
+            if (token.token == Token.malo) {
+              //Si es negativo, suma en las buenas
+              if (valor < 0) {
+                buenos -= valor;
+                palabrasbuenas++;
+              } else {
+                malos += valor;
+                palabrasMalas++;
+              }
+            }
+          }
+          multiplicador = null;
+        } else {
+          //Si es clave, se guarda el multiplicador para la siguiente palabra
+          if (token.token == Token.clave) {
+            multiplicador = token.valor;
+          } else {
+            multiplicador = null;
           }
         }
       }
     }
+
+    //Para evitar valores por encima de 100, si el valor
 
     //Si es analizador de atencion, se verifica que haya saludo y despedida
     String mensaje = '';
@@ -209,44 +263,52 @@ class Analizador {
   }
 
   //Funcion que recibe un Map con las palabras y su token y lo guarda en un archivo de texto
-  void actualizarTabla(Map<String, Token> palabrasNuevas) {
+  void actualizarTabla(Map<String, TokenValor> palabrasNuevas) {
     File file = File('tablaSimbolos.txt');
     if (!file.existsSync()) {
-      file.createSync();
+      inicializarPalabras();
     }
+
+    //Obtener la tabla de simbolos para no agregar palabras repetidas
+    final HashMap<String, TokenValor> tablaSimbolos = cargarPalabras();
 
     //Guardar las palabras nuevas en el archivo
     for (String palabra in palabrasNuevas.keys) {
-      final intToken = Token.values.indexOf(palabrasNuevas[palabra]!);
+      final intToken = Token.values.indexOf(palabrasNuevas[palabra]!.token);
+      final valor = palabrasNuevas[palabra]!.valor;
 
       //Agregamos la palabra, su version masculina, femenina y plural
-      file.writeAsStringSync('\n$palabra $intToken', mode: FileMode.append);
+      if (!tablaSimbolos.containsKey(palabra)) {
+        file.writeAsStringSync('\n$palabra $intToken $valor',
+            mode: FileMode.append);
+      }
 
       //Agregar version en plural
       if (!palabra.endsWith('s')) {
-        file.writeAsStringSync('\n${palabra}s $intToken',
+        file.writeAsStringSync('\n${palabra}s $intToken $valor',
             mode: FileMode.append);
       }
 
       //Si la palabra termina en "a", se agrega la version masculina
       if (palabra.endsWith('a')) {
         String masculino = '${palabra.substring(0, palabra.length - 1)}o';
-        file.writeAsStringSync('\n$masculino $intToken', mode: FileMode.append);
-        file.writeAsStringSync('\n${masculino}s $intToken',
+        file.writeAsStringSync('\n$masculino $intToken $valor',
+            mode: FileMode.append);
+        file.writeAsStringSync('\n${masculino}s $intToken $valor',
             mode: FileMode.append);
       } else {
         //Si la palabra termina en "o", se quita la "o" y se agrega la version femenina
         if (palabra.endsWith('o')) {
           String femenino = '${palabra.substring(0, palabra.length - 1)}a';
-          file.writeAsStringSync('\n$femenino $intToken',
+          file.writeAsStringSync('\n$femenino $intToken $valor',
               mode: FileMode.append);
-          file.writeAsStringSync('\n${femenino}s $intToken',
+          file.writeAsStringSync('\n${femenino}s $intToken $valor',
               mode: FileMode.append);
         } else {
           String femenino = '${palabra}a';
-          file.writeAsStringSync('\n$femenino $intToken',
+          file.writeAsStringSync('\n$femenino $intToken $valor',
               mode: FileMode.append);
-          file.writeAsStringSync('\n${femenino}s $intToken',
+          file.writeAsStringSync('\n${femenino}s $intToken $valor',
               mode: FileMode.append);
         }
       }
@@ -256,7 +318,7 @@ class Analizador {
   //Funcion que recibe un texto y genera un widget richtext con las palabras buenas y malas
   List<TextSpan> generarRichText(String texto, BuildContext context) {
     //Tabla de simbolos
-    final HashMap<String, Token> tablaSimbolos = cargarPalabras();
+    final HashMap<String, TokenValor> tablaSimbolos = cargarPalabras();
     //Limpiar el texto
     //texto = limpiarTexto(texto);
 
@@ -271,6 +333,10 @@ class Analizador {
     for (int i = 0; i < lineas.length; i++) {
       List<String> palabras = lineas[i].split(RegExp(r'\s+'));
 
+      //Se tiene un multiplicador para las palabras clave, si es negativo, invierte
+      //el valor de la palabra siguiente (buena y mala)
+      double? multiplicador;
+
       //Recorrer cada palabra
       for (int j = 0; j < palabras.length; j++) {
         final palabra = palabras[j];
@@ -278,39 +344,96 @@ class Analizador {
         if (palabra.isEmpty) continue;
 
         //Verificamos el token
-        final token = tablaSimbolos[limpiarTexto(palabra)];
+        TokenValor? token = tablaSimbolos[limpiarTexto(palabra)];
+
+        //Si el token es null, hay un error
+        if (token == null) {
+          return [];
+        }
+
         bool esSaludoCompuesto = false;
 
         //Comprobar si es saludo compuesto
-        if (esAtencion && token == Token.saludoCompuesto) {
+        if (esAtencion && token.token == Token.saludoCompuesto) {
           //Verificar si la siguiente palabra es saludo compuesto
           if (j + 1 < palabras.length &&
-              tablaSimbolos[limpiarTexto(palabras[j + 1])] ==
+              tablaSimbolos[limpiarTexto(palabras[j + 1])]?.token ==
                   Token.saludoCompuesto) {
             esSaludoCompuesto = true;
           }
           //Verificar si la palabra anterior es saludo compuesto
           if (j - 1 >= 0 &&
-              tablaSimbolos[limpiarTexto(palabras[j - 1])] ==
+              tablaSimbolos[limpiarTexto(palabras[j - 1])]?.token ==
                   Token.saludoCompuesto) {
             esSaludoCompuesto = true;
           }
         }
 
-        //Si el token es NULL, hay un error.
-        if (token == null) {
-          return [];
+        //Si es clave, se guarda el multiplicador para la siguiente palabra
+        if (token.token == Token.clave) {
+          multiplicador = token.valor;
+
+          //Obtener el valor de la palabra siguiente, si es buena o mala
+          //entonces cambia el valor actual, teniendo en cuenta si el multiplicador
+          //es negativo. Para eso, cambia el token actual y siguiente.
+          if (j + 1 < palabras.length) {
+            final sigPalabra = palabras[j + 1];
+            final sigToken = tablaSimbolos[limpiarTexto(sigPalabra)];
+
+            if (sigToken != null) {
+              //Si es buena o mala, se cambia el token actual
+              if (sigToken.token == Token.bueno) {
+                if (multiplicador < 0) {
+                  token = TokenValor(token: Token.malo, valor: token.valor);
+                } else {
+                  token = TokenValor(token: Token.bueno, valor: token.valor);
+                }
+              }
+              if (sigToken.token == Token.malo) {
+                if (multiplicador < 0) {
+                  token = TokenValor(token: Token.bueno, valor: token.valor);
+                } else {
+                  token = TokenValor(token: Token.malo, valor: token.valor);
+                }
+              }
+            }
+          }
+        } else {
+          //Si la palabra es buena o mala, se verifica si el multiplicador es negativo
+          //para cambiar el valor de la palabra
+          if (multiplicador != null && Token.values.indexOf(token.token) < 2) {
+            if (token.token == Token.bueno) {
+              //Si es negativo, suma en las malas
+              if (multiplicador < 0) {
+                token = TokenValor(token: Token.malo, valor: token.valor);
+              } else {
+                token = TokenValor(token: Token.bueno, valor: token.valor);
+              }
+            } else {
+              if (token.token == Token.malo) {
+                //Si es negativo, suma en las buenas
+                if (multiplicador < 0) {
+                  token = TokenValor(token: Token.bueno, valor: token.valor);
+                } else {
+                  token = TokenValor(token: Token.malo, valor: token.valor);
+                }
+              }
+            }
+          }
+
+          multiplicador = null;
         }
 
         //Agregamos el texto a la lista de widgets
         widgets.add(TextSpan(
             text: '$palabra ',
             style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-                color: token == Token.bueno
+                color: token.token == Token.bueno
                     ? Colors.green
-                    : token == Token.malo
+                    : token.token == Token.malo
                         ? Colors.red
-                        : token == Token.saludo || esSaludoCompuesto
+                        : (esAtencion && token.token == Token.saludo) ||
+                                esSaludoCompuesto
                             ? Colors.orange
                             : Colors.black)));
       }

@@ -22,8 +22,18 @@ import 'package:speech_analytics/widgets/selector.dart';
 class CardTexto extends StatefulWidget {
   final bool esAtencion;
   final String titulo;
+  final int step;
+  final void Function() addStep;
+  final void Function() reset;
 
-  const CardTexto({super.key, required this.titulo, this.esAtencion = false});
+  const CardTexto({
+    super.key,
+    required this.titulo,
+    this.esAtencion = false,
+    required this.step,
+    required this.addStep,
+    required this.reset,
+  });
 
   @override
   State<CardTexto> createState() => CardTextoState();
@@ -32,7 +42,6 @@ class CardTexto extends StatefulWidget {
 class CardTextoState extends State<CardTexto> {
   File? file;
   String? text;
-  int activeStep = 0;
   late Analizador analizador;
   final Map<String, Token> palabrasSospechosas = {};
   Puntaje? puntaje;
@@ -52,7 +61,7 @@ class CardTextoState extends State<CardTexto> {
 
       if (result == null) return;
 
-      activeStep = 1;
+      widget.addStep();
 
       //Verificar si es web
       if (kIsWeb) {
@@ -74,11 +83,11 @@ class CardTextoState extends State<CardTexto> {
     }
   }
 
-  void _removeFile() {
+  void removeFile() {
     setState(() {
       file = null;
       text = null;
-      activeStep = 0;
+      widget.reset();
       palabrasSospechosas.clear();
       puntaje = null;
     });
@@ -97,10 +106,8 @@ class CardTextoState extends State<CardTexto> {
       palabrasSospechosas[palabra] = Token.otros;
     }
 
-    //Como todavia no funciona mostramos una imagen de un gatito
-    //que dice "no hace nada"
     setState(() {
-      activeStep = 2;
+      widget.addStep();
     });
   }
 
@@ -131,14 +138,14 @@ class CardTextoState extends State<CardTexto> {
               if (file != null) ...[
                 //Mostrar icono para quitar archivo
                 IconButton(
-                  onPressed: _removeFile,
+                  onPressed: removeFile,
                   icon: const Icon(Icons.close),
                 ),
               ]
             ],
           ),
           EasyStepper(
-            activeStep: activeStep,
+            activeStep: widget.step,
             showLoadingAnimation: false,
             lineStyle: const LineStyle(lineLength: 80),
             stepShape: StepShape.circle,
@@ -174,7 +181,7 @@ class CardTextoState extends State<CardTexto> {
               )
             ],
           ),
-          if (activeStep == 0) ...[
+          if (widget.step == 0) ...[
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -189,7 +196,7 @@ class CardTextoState extends State<CardTexto> {
               ),
             ),
           ],
-          if (activeStep == 1) ...[
+          if (widget.step == 1) ...[
             //Mostrar nombre del archivo
             Text(file!.path.split('/').last),
 
@@ -222,7 +229,7 @@ class CardTextoState extends State<CardTexto> {
 
             const SizedBox(height: 20),
           ],
-          if (activeStep == 2) ...[
+          if (widget.step == 2) ...[
             Expanded(
               child: TokenSelector(
                 palabras: palabrasSospechosas,
@@ -233,20 +240,20 @@ class CardTextoState extends State<CardTexto> {
                   puntaje = analizador.obtenerPuntuacion(text!);
                   setState(
                     () {
-                      activeStep = 4;
+                      widget.addStep();
                     },
                   );
                 },
               ),
             ),
           ],
-          if (activeStep == 4) ...[
+          if (widget.step == 3) ...[
             Expanded(
               child: Puntuacion(
                 textspan: analizador.generarRichText(text!, context),
                 puntaje: puntaje!,
                 onRestart: () {
-                  _removeFile();
+                  removeFile();
                 },
               ),
             ),

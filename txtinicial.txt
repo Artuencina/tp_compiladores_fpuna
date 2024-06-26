@@ -25,3 +25,6 @@ desastre 1 2
 nada 2 -1
 esta 2 1
 este 2 1
+por 2 1
+favor 0 1
+muchas 2 2

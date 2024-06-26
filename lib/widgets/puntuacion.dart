@@ -26,7 +26,7 @@ class Puntuacion extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Resultado',
+            'Resultado del texto',
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 10),
@@ -112,16 +112,6 @@ class Puntuacion extends StatelessWidget {
               text: TextSpan(
                 children: textspan,
               ),
-            ),
-          ),
-
-          //Boton para volver a empezar
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: ElevatedButton.icon(
-              onPressed: onRestart,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Volver a empezar'),
             ),
           ),
         ],

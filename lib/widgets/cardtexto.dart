@@ -232,6 +232,7 @@ class CardTextoState extends State<CardTexto> {
           if (widget.step == 2) ...[
             Expanded(
               child: TokenSelector(
+                otrasPalabras: analizador.tablaUpdate,
                 palabras: palabrasSospechosas,
                 onSelected: (result) {
                   analizador.actualizarTabla(result);

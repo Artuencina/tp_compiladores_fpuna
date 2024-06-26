@@ -44,6 +44,13 @@ class TokenValor {
 }
 
 class Analizador {
+  //Variable que indica si el analizador es para el cliente o el de atencion
+  bool esAtencion;
+
+  //Tabla para cargar temporalmente las palabras nuevas
+  final HashMap<String, Token> tablaUpdate = HashMap();
+
+  //Constructor
   Analizador({this.esAtencion = false}) {
     //Crear archivo de texto con la tabla de simbolos
     File file = File('tablaSimbolos.txt');
@@ -53,9 +60,6 @@ class Analizador {
       inicializarPalabras();
     }
   }
-
-  //Variable que indica si el analizador es para el cliente o el de atencion
-  bool esAtencion;
 
   //Funcion que lee un archivo txtinicial.txt y lo guarda en tablasimbolos.txt
   void inicializarPalabras() {
@@ -102,7 +106,7 @@ class Analizador {
     //Tabla de simbolos
     final HashMap<String, TokenValor> tablaSimbolos = cargarPalabras();
 
-    File file = File('tablaSimbolos.txt');
+    //File file = File('tablaSimbolos.txt');
     //Quitar los signos de puntuacion
     texto = limpiarTexto(texto);
 
@@ -126,9 +130,12 @@ class Analizador {
         //Se verifica que no sea sospechosa
         if (!sospechosas.contains(palabras[i])) {
           //Guardar en el archivo
-          file.writeAsStringSync(
-              '\n${palabras[i]} ${Token.values.indexOf(Token.otros)} 1',
-              mode: FileMode.append);
+          // file.writeAsStringSync(
+          //     '\n${palabras[i]} ${Token.values.indexOf(Token.otros)} 1',
+          //     mode: FileMode.append);
+
+          //Guardar en la tabla de simbolos temporal
+          tablaUpdate[palabras[i]] = Token.otros;
         }
       }
     }

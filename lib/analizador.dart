@@ -26,7 +26,15 @@ import 'package:flutter/material.dart';
 import 'package:speech_analytics/main.dart';
 import 'package:speech_analytics/puntuacion.dart';
 
-enum Token { bueno, malo, clave, saludo, saludoCompuesto, otros }
+enum Token {
+  bueno,
+  malo,
+  clave,
+  saludo,
+  saludoCompuesto,
+  otros,
+  identificacion
+}
 
 class TokenValor {
   final Token token;
@@ -134,6 +142,7 @@ class Analizador {
     final HashMap<String, TokenValor> tablaSimbolos = cargarPalabras();
     bool haySaludo = false;
     bool hayDespedida = false;
+    bool hayIdentificacion = false;
     int buenos = 0;
     int palabrasbuenas = 0;
     int malos = 0;
@@ -180,6 +189,11 @@ class Analizador {
                 haySaludo = true;
               }
             }
+          }
+
+          //Comprobar que se identifique al cliente
+          if (token.token == Token.identificacion) {
+            hayIdentificacion = true;
           }
 
           //Comprobar que al final haya una despedida
@@ -236,8 +250,6 @@ class Analizador {
       }
     }
 
-    //Para evitar valores por encima de 100, si el valor
-
     //Si es analizador de atencion, se verifica que haya saludo y despedida
     String mensaje = '';
     if (esAtencion) {
@@ -247,6 +259,10 @@ class Analizador {
       }
       if (!hayDespedida) {
         mensaje += 'No se encontró una despedida al final del texto. ';
+        malos += 5;
+      }
+      if (!hayIdentificacion) {
+        mensaje += 'No se identificó al cliente. ';
         malos += 5;
       }
     }

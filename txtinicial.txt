@@ -28,3 +28,7 @@ este 2 1
 por 2 1
 favor 0 1
 muchas 2 2
+cédula 5 1
+identificación 5 1
+ci 5 1
+dni 5 1

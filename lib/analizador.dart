@@ -127,13 +127,7 @@ class Analizador {
         }
       } else {
         //Si no está en la tabla de simbolos, se agrega como otros
-        //Se verifica que no sea sospechosa
         if (!sospechosas.contains(palabras[i])) {
-          //Guardar en el archivo
-          // file.writeAsStringSync(
-          //     '\n${palabras[i]} ${Token.values.indexOf(Token.otros)} 1',
-          //     mode: FileMode.append);
-
           //Guardar en la tabla de simbolos temporal
           tablaUpdate[palabras[i]] = Token.otros;
         }
@@ -175,8 +169,9 @@ class Analizador {
         final token = tablaSimbolos[palabra];
 
         //Si el token es NULL, hay un error.
+        //Manejador de errores
         if (token == null) {
-          return null;
+          continue;
         }
 
         //Si es analizador de atencion, hay que corroborar que se tengan
@@ -222,7 +217,7 @@ class Analizador {
         //las palabras encontradas en lineas posteriores
         //tienen mas peso
         if (Token.values.indexOf(token.token) < 2) {
-          final valor = (esAtencion ? 0 : i) +
+          final valor = (esAtencion ? 0 : i * (multiplicador ?? 1)).toInt() +
               ((multiplicador ?? 1) * token.valor).toInt();
           if (token.token == Token.bueno) {
             //Si es negativo, suma en las malas

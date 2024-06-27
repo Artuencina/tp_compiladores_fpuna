@@ -177,7 +177,7 @@ class _HomeState extends State<Home> {
                             )
                           else
                             const Text(
-                              "La llamada buena",
+                              "La llamada fue buena",
                             ),
                         ],
                       ),
